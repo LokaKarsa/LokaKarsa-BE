@@ -2,11 +2,12 @@
 
 namespace App\Services;
 
-use App\Events\UnitCompleted;
+use App\Http\Resources\BadgeResource;
 use App\Models\Question;
 use App\Models\Unit;
 use App\Models\UserProfile;
 use Carbon\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 
 class LearningService
@@ -15,83 +16,116 @@ class LearningService
   const AVG_SECONDS_PER_QUESTION = 45;
 
   /**
-   * Memproses jawaban yang dikirim oleh pengguna.
+   * The badge service instance.
+   *
+   * @var \App\Services\BadgeService
+   */
+  protected BadgeService $badgeService;
+
+  /**
+   * Create a new service instance.
+   *
+   * @param \App\Services\BadgeService $badgeService
+   * @return void
+   */
+  public function __construct(BadgeService $badgeService)
+  {
+    $this->badgeService = $badgeService;
+  }
+
+  /**
+   * Process a user's answer, award XP, and check for unit completion.
+   *
+   * @param UserProfile $profile
+   * @param int $questionId
+   * @param string $userAnswer
+   * @return array
    */
   public function submitAnswer(UserProfile $profile, int $questionId, string $userAnswer): array
   {
     $question = Question::findOrFail($questionId);
     $isCorrect = ($userAnswer == $question->content['correct_answer']);
+    $newlyUnlockedBadges = collect();
 
-    // 1. Selalu catat setiap jawaban
     $profile->answers()->create([
       'question_id' => $question->id,
       'is_correct' => $isCorrect,
     ]);
 
-    // 2. Jika jawaban benar, lakukan proses selanjutnya
     if ($isCorrect) {
-      // Beri poin XP
       $profile->xp_points += self::XP_PER_CORRECT_ANSWER;
       $profile->save();
 
-      // Panggil method baru untuk memeriksa apakah unit sudah selesai
-      $this->checkForUnitCompletion($profile, $question->unit);
+      // Directly call the badge service to check for XP-based badges
+      $newlyUnlockedBadges = $this->badgeService->checkAndAwardBadges($profile, 'XP');
+    }
+
+    $unitCompletionSummary = $this->checkForUnitCompletion($profile, $question->unit);
+
+    // Merge badges that might have been unlocked from completing the unit (e.g., streak badges)
+    if ($unitCompletionSummary && isset($unitCompletionSummary['newly_unlocked_badges'])) {
+      $newlyUnlockedBadges = $newlyUnlockedBadges->merge($unitCompletionSummary['newly_unlocked_badges']);
     }
 
     return [
       'is_correct' => $isCorrect,
       'correct_answer' => $question->content['correct_answer'],
+      'unit_completion_summary' => $unitCompletionSummary,
+      'newly_unlocked_badges' => BadgeResource::collection($newlyUnlockedBadges->unique('id')),
     ];
   }
 
   /**
-   * Memeriksa apakah pengguna telah menyelesaikan semua soal di satu unit.
-   * Ini adalah method baru yang menjadi inti dari perubahan logika.
+   * Check if a unit is completed after a correct answer.
+   *
+   * @param UserProfile $profile
+   * @param Unit $unit
+   * @return array|null
    */
-  private function checkForUnitCompletion(UserProfile $profile, Unit $unit): void
+  private function checkForUnitCompletion(UserProfile $profile, Unit $unit): ?array
   {
-    // Hitung jumlah total soal di unit ini
     $totalQuestionsInUnit = $unit->questions()->count();
-
-    // Jika tidak ada soal, hentikan proses
     if ($totalQuestionsInUnit == 0) {
-      return;
+      return null;
     }
 
-    // Hitung jumlah jawaban benar yang unik dari pengguna untuk unit ini
     $correctAnswersCount = $profile->answers()
       ->where('is_correct', true)
       ->whereIn('question_id', $unit->questions()->pluck('id'))
       ->distinct('question_id')
       ->count();
 
-    // Jika jumlah jawaban benar sudah sama dengan total soal, unit selesai!
-    if ($correctAnswersCount >= $totalQuestionsInUnit) {
-      $this->handleUnitCompletion($profile, $unit);
+    if ($correctAnswersCount < $totalQuestionsInUnit) {
+      return null;
     }
+
+    return $this->handleUnitCompletion($profile, $unit);
   }
 
   /**
-   * Menangani semua logika setelah sebuah unit berhasil diselesaikan.
+   * Handle the logic for when a unit is completed.
+   *
+   * @param UserProfile $profile
+   * @param Unit $unit
+   * @return array
    */
   private function handleUnitCompletion(UserProfile $profile, Unit $unit): array
   {
-    // 1. Cari atau buat catatan progress untuk unit ini
-    $progress = $profile->progress()->firstOrCreate(
-      ['unit_id' => $unit->id]
-    );
+    $progress = $profile->progress()->firstOrCreate(['unit_id' => $unit->id]);
+    $newlyUnlockedBadges = collect();
 
-    // 2. Hanya jalankan logika streak JIKA unit ini SEBELUMNYA belum selesai.
-    // Ini mencegah streak bertambah jika pengguna mengulang unit yang sudah selesai.
-    if ($progress->status != 'completed') {
+    if ($progress->status !== 'completed') {
       $progress->status = 'completed';
       $progress->save();
 
       $this->updateStreak($profile);
       $profile->save();
-      event(new UnitCompleted($profile));
+
+      // Directly call the badge service to check for STREAK-based badges
+      $newlyUnlockedBadges = $this->badgeService->checkAndAwardBadges($profile, 'STREAK');
     }
 
+    // Calculate summary stats for this session
     $answersInThisUnit = $profile->answers()->whereIn('question_id', $unit->questions()->pluck('id'));
     $totalAnswers = $answersInThisUnit->count();
     $correctAnswers = $answersInThisUnit->where('is_correct', true)->count();
@@ -99,30 +133,27 @@ class LearningService
     $xpGained = $correctAnswers * self::XP_PER_CORRECT_ANSWER;
     $timeSpentMinutes = round(($totalAnswers * self::AVG_SECONDS_PER_QUESTION) / 60);
 
-    // Cek lencana...
-    $newlyUnlockedBadge = null; // Logika lencana di sini...
-
-    // [BARU] Rakit data ringkasan
     $summaryData = [
       'unit_name' => $unit->name,
       'time_spent_minutes' => $timeSpentMinutes,
       'accuracy_percent' => $accuracy,
       'xp_gained' => $xpGained,
-      'new_badge_unlocked' => $newlyUnlockedBadge ? [
-        'name' => $newlyUnlockedBadge->name,
-        'description' => $newlyUnlockedBadge->description,
-      ] : null,
+      'newly_unlocked_badges' => $newlyUnlockedBadges, // Pass the raw collection
     ];
 
     Cache::put('profile:' . $profile->id . ':last_activity_summary', $summaryData, now()->addMinutes(15));
 
+    // Transform for the immediate response
+    $summaryData['newly_unlocked_badges'] = BadgeResource::collection($newlyUnlockedBadges);
 
     return $summaryData;
   }
 
   /**
-   * Logika untuk memperbarui streak harian pengguna.
-   * Method ini tidak berubah, hanya dipanggil dari tempat yang berbeda.
+   * Update the user's daily streak.
+   *
+   * @param UserProfile $profile
+   * @return void
    */
   protected function updateStreak(UserProfile $profile): void
   {

@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
             LevelSeeder::class,
             UnitSeeder::class,
             QuestionSeeder::class,
-            // BadgeSeeder::class
+            BadgeSeeder::class
         ]);
     }
 }

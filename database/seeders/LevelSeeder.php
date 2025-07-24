@@ -13,10 +13,25 @@ class LevelSeeder extends Seeder
      */
     public function run(): void
     {
+        // Hapus data lama untuk menghindari duplikasi saat seeding ulang
+        Level::query()->delete();
+
         Level::create([
             'name' => 'Pengenalan Aksara',
-            'description' => 'Mulai perjalananmu dengan mengenal bentuk dasar Aksara Jawa.',
+            'description' => 'Mulai perjalananmu dengan mengenal 20 bentuk dasar Aksara Jawa (Aksara Carakan).',
             'order' => 1
+        ]);
+
+        Level::create([
+            'name' => 'Merangkai Kata',
+            'description' => 'Latih kemampuanmu dengan merangkai aksara dasar menjadi kata-kata sederhana.',
+            'order' => 2
+        ]);
+
+        Level::create([
+            'name' => 'Menulis Kalimat',
+            'description' => 'Tantang dirimu untuk menulis dan membaca kalimat pendek dalam Aksara Jawa.',
+            'order' => 3
         ]);
     }
 }

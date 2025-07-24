@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\DashboardResource;
 use App\Http\Resources\UnitResource;
 use App\Http\Traits\ApiResponse;
 use App\Http\Traits\ManagesActivityData;
@@ -31,49 +32,25 @@ class DashboardController extends Controller
         $profile = $request->user()->profile;
 
         if (!$profile) {
-            return $this->errorResponse('Profil pengguna tidak ditemukan.', 404);
+            // Jika pengguna belum melengkapi profilnya, kembalikan struktur data default.
+            return $this->successResponse([
+                'level' => ['level' => 1, 'progress_percent' => 0],
+                'streak' => 0,
+                'stats' => ['total_correct_answers' => 0, 'units_completed' => 0],
+                'next_unit' => Unit::orderBy('order')->first() ? new UnitResource(Unit::orderBy('order')->first()) : null,
+                'recent_badges' => [],
+                'weekly_leaderboard' => [],
+                'activity_chart' => [],
+            ], 'Dashboard data default.');
         }
 
-        // 1. Ambil data Streak
-        $streak = $profile->streak_days;
+        // Eager load relasi untuk menghindari N+1 query problem di dalam resource.
+        $profile->load('answers', 'progress', 'badges');
 
-        // 2. Ambil data Leaderboard dari service yang sudah kita buat
-        $leaderboard = $this->leaderboardService->getWeeklyLeaderboardData();
-
-        // 3. Ambil data Activity (GitHub Style)
-        $activity = $this->getActivityData($profile->id);
-
-        // 4. [BARU] Ambil informasi level dari attribute
-        $levelInfo = $profile->level;
-
-        // 5. Ambil Lencana Terbaru
-        // $recentBadges = $profile->badges()->latest('unlocked_at')->take(3)->get();
-
-        // 3. Ambil Rekomendasi Latihan Berikutnya
-        $nextUnitModel = Unit::whereDoesntHave('userProgress', function ($query) use ($profile) {
-            $query->where('user_profile_id', $profile->id)->where('status', 'completed');
-        })->orderBy('order')->first();
-        // Gunakan API Resource agar formatnya konsisten
-        $nextUnit = $nextUnitModel ? new UnitResource($nextUnitModel) : null;
-
-        // 4. Ambil Statistik Keseluruhan
-        $stats = [
-            'total_correct_answers' => $profile->answers()->where('is_correct', true)->count(),
-            'units_completed' => $profile->progress()->where('status', 'completed')->count(),
-        ];
-
-        // 5. Gabungkan semua data
-        $dashboardData = [
-            'level' => $levelInfo,
-            'streak' => $streak,
-            'leaderboard' => $leaderboard,
-            'activity' => $activity,
-            'stats' => $stats,
-            'next_unit' => $nextUnit,
-            // 'recent_badges' => BadgeResource::collection($recentBadges),
-            'weekly_leaderboard' => $leaderboard,
-        ];
-
-        return $this->successResponse($dashboardData, 'Dashboard data berhasil diambil.');
+        // Cukup kembalikan resource baru. Semua logika format ada di dalam DashboardResource.
+        return $this->successResponse(
+            new DashboardResource($profile),
+            'Dashboard data berhasil diambil.'
+        );
     }
 }

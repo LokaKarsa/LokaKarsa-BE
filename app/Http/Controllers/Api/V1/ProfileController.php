@@ -19,38 +19,24 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
-        $profile = $user->profile()->with('badges')->first();
+        $profile = $user->profile;
 
-        // Best Practice: Gunakan null-safe operator (?->) dan null coalescing (??)
-        // untuk menangani kasus di mana $profile tidak ada (null).
+        // Jika profil belum ada, kembalikan data default yang bersih.
+        if (!$profile) {
+            return $this->successResponse(
+                UserProfileResource::defaultProfileData($user),
+                'Profil belum dilengkapi, menampilkan data default.'
+            );
+        }
 
-        $profileId = $profile?->id;
+        // Eager load relasi untuk mencegah N+1 query di dalam resource.
+        $profile->load('badges');
 
-        $lastActivitySummary = $profileId ? Cache::get('profile:' . $profileId . ':last_activity_summary') : null;
-
-        // Merakit data untuk respons, baik profil ada maupun tidak.
-        $profileData = [
-            'user_info' => [
-                // Jika profil ada, gabungkan nama depan & belakang. Jika tidak, pakai nama dari tabel user.
-                'fullname' => $profile ? ($profile->firstname . ' ' . $profile->lastname) : $user->name,
-                'bio' => $profile?->bio ?? 'Pelajar Aksara Jawa',
-                'email' => $user->email
-            ],
-            'stats' => [
-                'total_xp' => $profile?->xp_points ?? 0,
-                'characters_mastered' => $profile?->characters_mastered ?? 0,
-                'highest_streak' => $profile?->highest_streak ?? 0,
-            ],
-            // Jika ada profileId, ambil data aktivitas. Jika tidak, kembalikan array kosong.
-            'activity_chart' => $profileId ? $this->getActivityData($profileId) : [],
-            'last_activity_summary' => $lastActivitySummary,
-            'badge_gallery' => BadgeResource::collection($profile->badges),
-            // Jika profil ada, ambil badges. Jika tidak, kembalikan array kosong.
-        ];
-
-        $message = $profile ? 'Profil berhasil diambil.' : 'Profil belum dilengkapi, menampilkan data default.';
-
-        return $this->successResponse($profileData, $message);
+        // Cukup kembalikan resource. Semua logika format ada di dalamnya.
+        return $this->successResponse(
+            new UserProfileResource($profile),
+            'Profil berhasil diambil.'
+        );
     }
 
     // POST atau PATCH Profile

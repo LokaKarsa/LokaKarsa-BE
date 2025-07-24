@@ -44,10 +44,12 @@ class UserProfile extends Model
         return $this->hasMany(UserProgress::class);
     }
 
-    // public function badges(): BelongsToMany
-    // {
-    //     return $this->belongsToMany(Badge::class, 'badge_user_profile')->withPivot('unlocked_at');
-    // }
+
+    public function badges(): BelongsToMany
+    {
+        return $this->belongsToMany(Badge::class, 'badge_user_profile')
+            ->withPivot('unlocked_at');
+    }
 
     protected function level(): Attribute
     {
