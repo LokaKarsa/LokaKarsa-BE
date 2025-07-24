@@ -19,7 +19,7 @@ class ProfileController extends Controller
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
-        $profile = $user->profile; // Ini akan menghasilkan objek UserProfile atau null
+        $profile = $user->profile()->with('badges')->first();
 
         // Best Practice: Gunakan null-safe operator (?->) dan null coalescing (??)
         // untuk menangani kasus di mana $profile tidak ada (null).
@@ -34,6 +34,7 @@ class ProfileController extends Controller
                 // Jika profil ada, gabungkan nama depan & belakang. Jika tidak, pakai nama dari tabel user.
                 'fullname' => $profile ? ($profile->firstname . ' ' . $profile->lastname) : $user->name,
                 'bio' => $profile?->bio ?? 'Pelajar Aksara Jawa',
+                'email' => $user->email
             ],
             'stats' => [
                 'total_xp' => $profile?->xp_points ?? 0,
@@ -43,8 +44,8 @@ class ProfileController extends Controller
             // Jika ada profileId, ambil data aktivitas. Jika tidak, kembalikan array kosong.
             'activity_chart' => $profileId ? $this->getActivityData($profileId) : [],
             'last_activity_summary' => $lastActivitySummary,
+            'badge_gallery' => BadgeResource::collection($profile->badges),
             // Jika profil ada, ambil badges. Jika tidak, kembalikan array kosong.
-            // 'badge_gallery' => $profile ? BadgeResource::collection($profile->badges()->get()) : [],
         ];
 
         $message = $profile ? 'Profil berhasil diambil.' : 'Profil belum dilengkapi, menampilkan data default.';
