@@ -22,6 +22,12 @@ class UnitSeeder extends Seeder
                 'description' => 'Lima aksara pertama yang akan kamu kuasai.',
                 'order' => 1
             ]);
+            Unit::create([
+                'level_id' => $level->id,
+                'name' => 'Baris 2: Da, Ta, Sa, Wa, La',
+                'description' => 'Lima aksara pertama yang akan kamu kuasai.',
+                'order' => 1
+            ]);
         }
     }
 }

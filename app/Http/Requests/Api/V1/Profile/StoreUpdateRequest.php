@@ -17,6 +17,7 @@ class StoreUpdateRequest extends FormRequest
         return [
             'firstname' => ['required', 'string', 'max:100'],
             'lastname' => ['required', 'string', 'max:100'],
+            'bio' => ['nullable', 'string', 'max:500'],
             'sex' => ['required', 'in:male,female'],
             'region' => ['nullable', 'string', 'max:100'],
             'date_of_birth' => ['required', 'date', 'before:today'],

@@ -6,11 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\LoginRequest;
 use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use App\Http\Resources\AuthResource;
-use App\Http\Resources\UserResource;
 use App\Http\Traits\ApiResponse;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 
 class AuthController extends Controller
@@ -42,8 +40,4 @@ class AuthController extends Controller
         return response()->json(['message' => 'Berhasil logout.'])->setStatusCode(200);
     }
 
-    public function me(Request $request): JsonResponse
-    {
-        return $this->successResponse(new UserResource($request->user()), 'Data pengguna berhasil diambil.');
-    }
 }
