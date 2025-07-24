@@ -24,7 +24,7 @@ class BadgeSeeder extends Seeder
             'description' => 'Berhasil menjaga streak selama 7 hari.',
             'type' => 'STREAK',
             'condition_value' => 7, // Syarat: streak_days >= 7
-            'konsekuensi berangkat telat'
+            'icon_url' => 'lucide:check-circle',
         ]);
     }
 }

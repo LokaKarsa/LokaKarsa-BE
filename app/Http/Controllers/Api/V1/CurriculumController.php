@@ -8,6 +8,8 @@ use App\Http\Resources\QuestionResource;
 use App\Http\Traits\ApiResponse;
 use App\Models\Level;
 use App\Models\Unit;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class CurriculumController extends Controller
 {
@@ -16,10 +18,14 @@ class CurriculumController extends Controller
     /**
      * Mengambil seluruh struktur kurikulum (levels dan units).
      */
-    public function index()
+    public function index(Request $request): JsonResponse
     {
-        // Best Practice: Eager load relasi untuk menghindari N+1 problem.
-        $levels = Level::with('units')->orderBy('order')->get();
+        // Eager load relasi secara efisien untuk menghindari N+1 query problem
+        $levels = Level::with([
+            'units' => function ($query) {
+                $query->withCount('questions')->orderBy('order');
+            }
+        ])->orderBy('order')->get();
 
         return $this->successResponse(LevelResource::collection($levels), 'Kurikulum berhasil diambil.');
     }
@@ -27,11 +33,21 @@ class CurriculumController extends Controller
     /**
      * Mengambil soal-soal untuk satu unit tertentu.
      */
-    public function showQuestions(Unit $unit)
+
+    public function showByUnit(Unit $unit): JsonResponse
     {
-        // Eager load tidak begitu perlu di sini karena kita sudah punya unit
         $questions = $unit->questions()->orderBy('order')->get();
 
-        return $this->successResponse(QuestionResource::collection($questions), 'Soal berhasil diambil.');
+        $data = [
+            'unit_info' => [
+                'id' => $unit->id,
+                'name' => $unit->name,
+                'description' => $unit->description,
+            ],
+            'total_questions' => $questions->count(),
+            'questions' => QuestionResource::collection($questions),
+        ];
+
+        return $this->successResponse($data, 'Soal berhasil diambil.');
     }
 }
