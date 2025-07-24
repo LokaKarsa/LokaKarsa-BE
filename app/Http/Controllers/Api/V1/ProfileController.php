@@ -16,36 +16,40 @@ class ProfileController extends Controller
 {
     use ApiResponse;
     use ManagesActivityData;
-
     public function show(Request $request): JsonResponse
     {
         $user = $request->user();
-        $profile = $user->profile; // Eager load badges
+        $profile = $user->profile; // Ini akan menghasilkan objek UserProfile atau null
 
-        if (!$profile) {
-            return $this->errorResponse('Profil pengguna tidak ditemukan.', 404);
-        }
+        // Best Practice: Gunakan null-safe operator (?->) dan null coalescing (??)
+        // untuk menangani kasus di mana $profile tidak ada (null).
 
-        $lastActivitySummary = Cache::get('profile:' . $profile->id . ':last_activity_summary');
+        $profileId = $profile?->id;
 
+        $lastActivitySummary = $profileId ? Cache::get('profile:' . $profileId . ':last_activity_summary') : null;
 
-        // Merakit data untuk respons
+        // Merakit data untuk respons, baik profil ada maupun tidak.
         $profileData = [
             'user_info' => [
-                'fullname' => $profile->firstname . ' ' . $profile->lastname,
-                'bio' => $profile->bio ?? 'Pelajar Aksara Jawa',
+                // Jika profil ada, gabungkan nama depan & belakang. Jika tidak, pakai nama dari tabel user.
+                'fullname' => $profile ? ($profile->firstname . ' ' . $profile->lastname) : $user->name,
+                'bio' => $profile?->bio ?? 'Pelajar Aksara Jawa',
             ],
             'stats' => [
-                'total_xp' => $profile->xp_points,
-                'characters_mastered' => $profile->characters_mastered, // Attribute baru
-                'highest_streak' => $profile->highest_streak,
+                'total_xp' => $profile?->xp_points ?? 0,
+                'characters_mastered' => $profile?->characters_mastered ?? 0,
+                'highest_streak' => $profile?->highest_streak ?? 0,
             ],
-            'activity_chart' => $this->getActivityData($profile->id),
+            // Jika ada profileId, ambil data aktivitas. Jika tidak, kembalikan array kosong.
+            'activity_chart' => $profileId ? $this->getActivityData($profileId) : [],
             'last_activity_summary' => $lastActivitySummary,
-            // 'badge_gallery' => BadgeResource::collection($profile->badges),
+            // Jika profil ada, ambil badges. Jika tidak, kembalikan array kosong.
+            // 'badge_gallery' => $profile ? BadgeResource::collection($profile->badges()->get()) : [],
         ];
 
-        return $this->successResponse($profileData, 'Profil berhasil diambil.');
+        $message = $profile ? 'Profil berhasil diambil.' : 'Profil belum dilengkapi, menampilkan data default.';
+
+        return $this->successResponse($profileData, $message);
     }
 
     // POST atau PATCH Profile
