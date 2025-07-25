@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\Level;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class LevelSeeder extends Seeder
@@ -13,25 +12,21 @@ class LevelSeeder extends Seeder
      */
     public function run(): void
     {
-        // Hapus data lama untuk menghindari duplikasi saat seeding ulang
+        // Hapus data lama sebelum melakukan seeding ulang
         Level::query()->delete();
 
+        // Level 1: Mengenal Aksara (Pilihan Ganda)
         Level::create([
-            'name' => 'Pengenalan Aksara',
-            'description' => 'Mulai perjalananmu dengan mengenal 20 bentuk dasar Aksara Jawa (Aksara Carakan).',
+            'name' => 'Mengenal Aksara',
+            'description' => 'Tantang dirimu untuk mengenali aksara-aksara dasar dengan memilih jawaban yang benar.',
             'order' => 1
         ]);
 
+        // Level 2: Menulis Aksara (Canvas)
         Level::create([
-            'name' => 'Merangkai Kata',
-            'description' => 'Latih kemampuanmu dengan merangkai aksara dasar menjadi kata-kata sederhana.',
+            'name' => 'Menulis Aksara',
+            'description' => 'Latih kemampuan menulismu dengan menulis aksara di atas canvas, dan biarkan aplikasi memprediksi aksara yang kamu tulis.',
             'order' => 2
-        ]);
-
-        Level::create([
-            'name' => 'Menulis Kalimat',
-            'description' => 'Tantang dirimu untuk menulis dan membaca kalimat pendek dalam Aksara Jawa.',
-            'order' => 3
         ]);
     }
 }

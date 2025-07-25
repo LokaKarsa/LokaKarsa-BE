@@ -4,66 +4,75 @@ namespace Database\Seeders;
 
 use App\Models\Level;
 use App\Models\Unit;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class UnitSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        // Hapus data lama
         Unit::query()->delete();
 
-        // Ambil ID dari setiap level
+        // Mendapatkan Level 1 dan Level 2
         $level1 = Level::where('order', 1)->first();
         $level2 = Level::where('order', 2)->first();
-        $level3 = Level::where('order', 3)->first();
 
-        // --- Unit untuk Level 1: Pengenalan Aksara ---
+        // Level 1: Mengenal Aksara (Pilihan Ganda)
         if ($level1) {
             Unit::create([
                 'level_id' => $level1->id,
-                'name' => 'Baris 1: Ha, Na, Ca, Ra, Ka',
-                'description' => 'Lima aksara pertama yang akan kamu kuasai.',
+                'name' => 'Mengenal Aksara Bagian 1: Ha, Na, Ca, Ra, Ka',
+                'description' => 'Mengenal aksara pertama dalam urutan Carakan melalui pilihan ganda.',
                 'order' => 1
             ]);
             Unit::create([
                 'level_id' => $level1->id,
-                'name' => 'Baris 2: Da, Ta, Sa, Wa, La',
-                'description' => 'Lima aksara berikutnya dalam urutan Carakan.',
+                'name' => 'Mengenal Aksara Bagian 2: Da, Ta, Sa, Wa, La',
+                'description' => 'Mengenal aksara berikutnya dalam urutan Carakan.',
                 'order' => 2
             ]);
             Unit::create([
                 'level_id' => $level1->id,
-                'name' => 'Baris 3: Pa, Dha, Ja, Ya, Nya',
-                'description' => 'Kuasai lima aksara di baris ketiga.',
+                'name' => 'Mengenal Aksara Bagian 3: Pa, Dha, Ja, Ya, Nya',
+                'description' => 'Mengenal aksara berikutnya.',
                 'order' => 3
             ]);
             Unit::create([
                 'level_id' => $level1->id,
-                'name' => 'Baris 4: Ma, Ga, Ba, Tha, Nga',
-                'description' => 'Selesaikan 20 aksara dasar Carakan.',
+                'name' => 'Mengenal Aksara Bagian 4: Ma, Ga, Ba, Tha, Nga',
+                'description' => 'Mengenal aksara berikutnya dalam urutan Carakan.',
                 'order' => 4
             ]);
         }
 
-        // --- Unit untuk Level 2: Merangkai Kata (Contoh) ---
+        // Level 2: Menulis Aksara (Canvas)
         if ($level2) {
+            // Unit untuk Level 2: Menulis Aksara
             Unit::create([
                 'level_id' => $level2->id,
-                'name' => 'Kata Sederhana 1',
-                'description' => 'Membaca kata dengan 2-3 suku kata.',
+                'name' => 'Menulis Aksara Bagian 1: Ha, Na, Ca, Ra, Ka',
+                'description' => 'Latih kemampuan menulis aksara Ha, Na, Ca, Ra, Ka di canvas.',
                 'order' => 1
             ]);
-        }
-
-        // --- Unit untuk Level 3: Menulis Kalimat (Contoh) ---
-        if ($level3) {
             Unit::create([
-                'level_id' => $level3->id,
-                'name' => 'Kalimat Pendek 1',
-                'description' => 'Membaca kalimat sederhana.',
-                'order' => 1
+                'level_id' => $level2->id,
+                'name' => 'Menulis Aksara Bagian 2: Da, Ta, Sa, Wa, La',
+                'description' => 'Latih kemampuan menulis aksara Da, Ta, Sa, Wa, La di canvas.',
+                'order' => 2
+            ]);
+            Unit::create([
+                'level_id' => $level2->id,
+                'name' => 'Menulis Aksara Bagian 3: Pa, Dha, Ja, Ya, Nya',
+                'description' => 'Latih kemampuan menulis aksara Pa, Dha, Ja, Ya, Nya di canvas.',
+                'order' => 3
+            ]);
+            Unit::create([
+                'level_id' => $level2->id,
+                'name' => 'Menulis Aksara Bagian 4: Ma, Ga, Ba, Tha, Nga',
+                'description' => 'Latih kemampuan menulis aksara Ma, Ga, Ba, Tha, Nga di canvas.',
+                'order' => 4
             ]);
         }
     }
