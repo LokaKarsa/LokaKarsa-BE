@@ -55,6 +55,9 @@ class UserProfileResource extends JsonResource
                 'bio' => $profile->bio ?? 'Pelajar Aksara Jawa',
                 'title' => $profile->title,
                 'avatar_url' => $profile->avatar_url,
+                'sex' => $profile->sex,
+                'region' => $profile->region,
+                'birthdate' => $profile->birthdate ? $profile->birthdate->format('Y-m-d') : null,
             ],
             'stats' => [
                 'total_xp' => $profile->xp_points,
