@@ -57,7 +57,7 @@ class UserProfileResource extends JsonResource
                 'avatar_url' => $profile->avatar_url,
                 'sex' => $profile->sex,
                 'region' => $profile->region,
-                'birthdate' => $profile->birthdate ? $profile->birthdate->format('Y-m-d') : null,
+                'date_of_birth' => $profile->date_of_birth ? $profile->date_of_birth->format('Y-m-d') : null,
             ],
             'stats' => [
                 'total_xp' => $profile->xp_points,
