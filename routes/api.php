@@ -19,7 +19,7 @@ Route::prefix('v1')->group(function () {
         Route::patch('/profile', [ProfileController::class, 'storeOrUpdate']); // Untuk Update
 
         Route::get('/curriculum', [CurriculumController::class, 'index']);
-        Route::get('/units/{unit}/questions', [CurriculumController::class, 'showQuestions']);
+        Route::get('/units/{unit}/questions', [CurriculumController::class, 'showByUnit']);
         Route::post('/answers', [AnswerController::class, 'submit']);
     });
 });

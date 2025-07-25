@@ -26,6 +26,10 @@ class UserProfile extends Model
         'highest_streak'
     ];
 
+    protected $casts = [
+        'date_of_birth' => 'datetime', // This will automatically convert the string to a Carbon instance
+    ];
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
