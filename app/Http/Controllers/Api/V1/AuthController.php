@@ -9,7 +9,6 @@ use App\Http\Resources\AuthResource;
 use App\Http\Traits\ApiResponse;
 use App\Services\AuthService;
 use Illuminate\Http\JsonResponse;
-use Tymon\JWTAuth\Facades\JWTAuth;
 
 
 class AuthController extends Controller
@@ -31,22 +30,14 @@ class AuthController extends Controller
 
     public function login(LoginRequest $request): AuthResource
     {
-        // Validate credentials
-        $credentials = $request->validated();
-
-        // Attempt login using JWT
-        if ($token = JWTAuth::attempt($credentials)) {
-            return new AuthResource(['token' => $token]);
-        }
-
-        return response()->json(['error' => 'Unauthorized'], 401);
+        $data = $this->authService->login($request->validated());
+        return new AuthResource($data);
     }
 
     public function logout(): JsonResponse
     {
-        // Invalidate the current JWT token
-        JWTAuth::invalidate(JWTAuth::getToken());
-
-        return response()->json(['message' => 'Successfully logged out.'])->setStatusCode(200);
+        $this->authService->logout();
+        return response()->json(['message' => 'Berhasil logout.'])->setStatusCode(200);
     }
+
 }

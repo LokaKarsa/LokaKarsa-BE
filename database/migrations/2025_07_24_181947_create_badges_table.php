@@ -16,7 +16,8 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->text('description');
             $table->string('icon_url')->nullable(); // Untuk menyimpan nama ikon Lucide
-            $table->enum('type', ['XP', 'STREAK', 'COMPLETION']);
+            $table->enum('type', ['XP', 'STREAK', 'COMPLETION', 'LEVEL', 'UNIT'])
+                ->default('XP'); // Tipe lencana, bisa XP, STREAK, COMPLETION, LEVEL, atau UNIT
             $table->unsignedInteger('condition_value');
             $table->timestamps();
         });
